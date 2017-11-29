@@ -1,5 +1,10 @@
 [![Get help on Codementor](https://cdn.codementor.io/badges/get_help_github.svg)](https://www.codementor.io/olegkurbatov?utm_source=github&utm_medium=button&utm_term=olegkurbatov&utm_campaign=github)
 
+  
+___
+__This is a development fork for adding network capabilities!__
+___
+
 ## firmata4j
 **firmata4j** is a client library of [Firmata](https://github.com/firmata/protocol)
 written in Java. The library allows controlling Arduino (or another board) which
@@ -28,18 +33,18 @@ Add the following dependency to `pom.xml` of your project:
 
 ## Usage
 General scenario of usage is following:
-###Serial connection:
+### Serial connection:
 ```java
 // construct the Firmata device instance using the name of a serial port (eg. via usb/serial adapter)
 IODevice device = new FirmataDevice("/dev/ttyUSB0");
 ```
-###Network connection (WORK IN PROGRESS!):
+### Network connection (WORK IN PROGRESS!):
 ```java
 // construct the Firmata device instance using a firmata network server (eg. via wifi)
 IODevice device = new FirmataDevice("192.168.10.20", 3030);
 ```
 
-###Communication:
+### Communication:
 ```java
 // subscribe to events using device.addEventListener(...);
 // and/or device.getPin(n).addEventListener(...);
