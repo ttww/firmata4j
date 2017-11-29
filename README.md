@@ -38,10 +38,18 @@ General scenario of usage is following:
 // construct the Firmata device instance using the name of a serial port (eg. via usb/serial adapter)
 IODevice device = new FirmataDevice("/dev/ttyUSB0");
 ```
+
+If you need to adjust the baud rate:
+
+```java
+IODevice device = new FirmataDevice("/dev/ttyUSB0:19200");  // only baudrate currently supported
+```
+Default serial parameter are: 57600, 8 databits, 1 stopbit, no parity.
+
 ### Network connection (WORK IN PROGRESS!):
 ```java
 // construct the Firmata device instance using a firmata network server (eg. via wifi)
-IODevice device = new FirmataDevice("192.168.10.20", 3030);
+IODevice device = new FirmataDevice("192.168.10.20:3030");
 ```
 
 ### Communication:
