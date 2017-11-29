@@ -5,6 +5,7 @@
 written in Java. The library allows controlling Arduino (or another board) which
 runs Firmata protocol from your java program.
 
+
 ## Capabilities
 - Interaction with a board and its pins in object-oriented style
 - Abstraction over details of the protocol
@@ -27,8 +28,19 @@ Add the following dependency to `pom.xml` of your project:
 
 ## Usage
 General scenario of usage is following:
+###Serial connection:
 ```java
-IODevice device = new FirmataDevice("/dev/ttyUSB0"); // construct the Firmata device instance using the name of a port
+// construct the Firmata device instance using the name of a serial port (eg. via usb/serial adapter)
+IODevice device = new FirmataDevice("/dev/ttyUSB0");
+```
+###Network connection (WORK IN PROGRESS!):
+```java
+// construct the Firmata device instance using a firmata network server (eg. via wifi)
+IODevice device = new FirmataDevice("192.168.10.20", 3030);
+```
+
+###Communication:
+```java
 // subscribe to events using device.addEventListener(...);
 // and/or device.getPin(n).addEventListener(...);
 device.start(); // initiate communication to the device
