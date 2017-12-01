@@ -45,6 +45,8 @@ import static org.firmata4j.firmata.parser.FirmataToken.PROTOCOL_MINOR;
 import static org.firmata4j.firmata.parser.FirmataToken.STRING_MESSAGE;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,9 +66,10 @@ import org.firmata4j.IODevice;
 import org.firmata4j.IODeviceEventListener;
 import org.firmata4j.IOEvent;
 import org.firmata4j.Pin;
-import org.firmata4j.firmata.devices.SerialDevice;
 import org.firmata4j.firmata.parser.FirmataToken;
 import org.firmata4j.firmata.parser.WaitingForMessageState;
+import org.firmata4j.firmata.transport.Network;
+import org.firmata4j.firmata.transport.Serial;
 import org.firmata4j.fsm.Event;
 import org.firmata4j.fsm.FiniteStateMachine;
 import org.slf4j.Logger;
@@ -83,7 +86,7 @@ public class FirmataDevice implements IODevice {
     private final FirmataParser parser = new FirmataParser(deviceReceiveQueue);
     private final Thread parserExecutor = new Thread(parser, "firmata-parser-thread");
 //    private final SerialPort device;
-    private final FirmataDeviceInterface device;
+    private final FirmataTransportInterface device;
     private final Set<IODeviceEventListener> listeners = Collections.synchronizedSet(new LinkedHashSet<IODeviceEventListener>());
     private final List<FirmataPin> pins = Collections.synchronizedList(new ArrayList<FirmataPin>());
     private final AtomicBoolean started = new AtomicBoolean(false);
@@ -93,7 +96,7 @@ public class FirmataDevice implements IODevice {
     private final Map<Byte, FirmataI2CDevice> i2cDevices = new HashMap<>();
     private volatile Map<String, Object> firmwareInfo;
     private volatile Map<Integer, Integer> analogMapping;
-    private static final long TIMEOUT = 15000L;
+    private static final long TIMEOUT = 25000L;
     private static final int DELAY = 15;
     private static final Logger LOGGER = LoggerFactory.getLogger(FirmataDevice.class);
 
@@ -101,10 +104,31 @@ public class FirmataDevice implements IODevice {
      * Constructs FirmataDevice instance on specified port.
      *
      * @param portName the port name the device is connected to
+     * @throws IOException 
      */
-    public FirmataDevice(String portName) {
-   //     this.device = new SerialPort(portName);
-        this.device = new SerialDevice(portName);
+    public FirmataDevice(String portName) throws IOException {
+        if (Character.isDigit(portName.charAt(0))) {    // Simple check for numeric IP
+            
+            int port = 3030;
+            int portParam = portName.indexOf(':');
+            if (portParam != -1) {
+                port = Integer.parseInt(portName.substring(portParam + 1));
+                portName = portName.substring(0, portParam);
+            }
+
+            LOGGER.debug("Connect to server " + portName + ":" + port);
+            this.device = new Network(Inet4Address.getByName(portName), port);
+            
+        }
+        else {
+            LOGGER.debug("Connect to serial port  " + portName);
+            this.device = new Serial(portName);
+        }
+    }
+
+    public FirmataDevice(InetAddress ip, int port) {
+        LOGGER.debug("Connect to server " + ip.getHostAddress() + ":" + port);
+        this.device = new Network(ip, port);
     }
 
     @Override
@@ -139,7 +163,7 @@ public class FirmataDevice implements IODevice {
                  }
             }
             try {
-                 sendMessage(FirmataMessageFactory.REQUEST_FIRMWARE);
+                 sendMessage("REQUEST_FIRMWARE", FirmataMessageFactory.REQUEST_FIRMWARE);
             } catch (IOException ex) {
                	parserExecutor.interrupt();
                 throw ex;
@@ -218,7 +242,7 @@ public class FirmataDevice implements IODevice {
         if (!i2cDevices.containsKey(address)) {
             i2cDevices.put(address, new FirmataI2CDevice(this, address));
         }
-        sendMessage(FirmataMessageFactory.i2cConfigRequest(longestI2CDelay.get()));
+        sendMessage("i2cConfigRequest", FirmataMessageFactory.i2cConfigRequest(longestI2CDelay.get()));
         return i2cDevices.get(address);
     }
 
@@ -236,7 +260,7 @@ public class FirmataDevice implements IODevice {
         if (message.length() > 15) {
             LOGGER.warn("Firmata 2.3.6 implementation has input buffer only 32 bytes so you can safely send only 15 characters log messages");
         }
-        sendMessage(FirmataMessageFactory.stringMessage(message));
+        sendMessage("stringMessage", FirmataMessageFactory.stringMessage(message));
     }
 
     /**
@@ -246,8 +270,18 @@ public class FirmataDevice implements IODevice {
      * @param msg the Firmata message
      * @throws IOException when writing fails
      */
-    void sendMessage(byte[] msg) throws IOException {
-       device.writeBytes(msg);
+    void sendMessage(String info, byte[] msg) throws IOException {
+        LOGGER.debug("Write " + info + ": " + toHex(msg));
+        device.writeBytes(msg);
+    }
+
+    private String toHex(byte[] msg) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : msg) {
+            if (sb.length() != 0) sb.append(',');
+            sb.append(Integer.toHexString(b & 0xFF));
+        }
+        return sb.toString();
     }
 
     /**
@@ -277,7 +311,7 @@ public class FirmataDevice implements IODevice {
         int longestDelaySoFar = longestI2CDelay.get();
         while (longestDelaySoFar < delay) {
             if (longestI2CDelay.compareAndSet(longestDelaySoFar, delay)) {
-                sendMessage(message);
+                sendMessage("i2cConfigRequest", message);
             }
             longestDelaySoFar = longestI2CDelay.get();
         }
@@ -292,8 +326,8 @@ public class FirmataDevice implements IODevice {
     private void shutdown() throws IOException {
         ready.set(false);
 
-        sendMessage(FirmataMessageFactory.analogReport(false));
-        sendMessage(FirmataMessageFactory.digitalReport(false));
+        sendMessage("analogReport",  FirmataMessageFactory.analogReport(false));
+        sendMessage("digitalReport", FirmataMessageFactory.digitalReport(false));
             
         device.closePort();
     }
@@ -332,7 +366,7 @@ public class FirmataDevice implements IODevice {
     private void onFirmwareReceive(Event event) {
         firmwareInfo = event.getBody();
         try {
-            sendMessage(FirmataMessageFactory.REQUEST_CAPABILITY);
+            sendMessage("REQUEST_CAPABILITY", FirmataMessageFactory.REQUEST_CAPABILITY);
         } catch (IOException ex) {
             LOGGER.error("Error requesting device capabilities.", ex);
         }
@@ -345,9 +379,11 @@ public class FirmataDevice implements IODevice {
      */
     private void onCapabilitiesReceive(Event event) {
         byte pinId = (Byte) event.getBodyItem(PIN_ID);
+        
+        LOGGER.debug("onCapabilitiesReceive of pinId " + pinId);
         FirmataPin pin = new FirmataPin(this, pinId);
         for (byte i : (byte[]) event.getBodyItem(PIN_SUPPORTED_MODES)) {
-            pin.addSupprotedMode(Pin.Mode.resolve(i));
+            pin.addSupportedMode(Pin.Mode.resolve(i));
         }
         pins.add(pin.getIndex(), pin);
         if (pin.getSupportedModes().isEmpty()) {
@@ -356,7 +392,10 @@ public class FirmataDevice implements IODevice {
         } else {
             // if the pin supports some modes, we ask for its current mode and value
             try {
-                sendMessage(FirmataMessageFactory.pinStateRequest(pinId));
+                // twtwtw
+                try { Thread.sleep(500); } catch (InterruptedException eee) {eee.printStackTrace();}
+                
+                sendMessage("pinStateRequest", FirmataMessageFactory.pinStateRequest(pinId));
             } catch (IOException ex) {
                 LOGGER.error(String.format("Error requesting state of pin %d", pin.getIndex()), ex);
             }
@@ -370,20 +409,35 @@ public class FirmataDevice implements IODevice {
      */
     private void onPinStateRecieve(Event event) {
         byte pinId = (Byte) event.getBodyItem(PIN_ID);
+        
+        LOGGER.debug("onPinStateRecieve: pinId = {}, pins.size = {}", pinId, pins.size());
+
         FirmataPin pin = pins.get(pinId);
         if (pin.getMode() == null) {
+            LOGGER.debug("onPinStateRecieve: 1");
+
             pin.initMode(Pin.Mode.resolve((Byte) event.getBodyItem(PIN_MODE)));
             pin.initValue((Long) event.getBodyItem(PIN_VALUE));
         } else {
+            LOGGER.debug("onPinStateRecieve: 2");
             pin.updateValue((Long) event.getBodyItem(PIN_VALUE));
         }
+
+        // twtwtw
+        try { Thread.sleep(500); } catch (InterruptedException eee) {eee.printStackTrace();}
+        LOGGER.debug("onPinStateRecieve: 3");
+
         if (initializedPins.incrementAndGet() == pins.size()) {
             try {
-                sendMessage(FirmataMessageFactory.ANALOG_MAPPING_REQUEST);
+                LOGGER.debug("onPinStateRecieve: 4");
+                sendMessage("ANALOG_MAPPING_REQUEST", FirmataMessageFactory.ANALOG_MAPPING_REQUEST);
             } catch (IOException e) {
+                LOGGER.debug("onPinStateRecieve: 6");
                 LOGGER.error("Error on request analog mapping", e);
             }
         }
+        LOGGER.debug("onPinStateRecieve: 6");
+
     }
 
     /**
@@ -395,8 +449,8 @@ public class FirmataDevice implements IODevice {
     private void onAnalogMappingReceive(Event event) {
         analogMapping = (Map<Integer, Integer>) event.getBodyItem(ANALOG_MAPPING);
         try {
-            sendMessage(FirmataMessageFactory.analogReport(true));
-            sendMessage(FirmataMessageFactory.digitalReport(true));
+            sendMessage("analogReport",  FirmataMessageFactory.analogReport(true));
+            sendMessage("digitalReport", FirmataMessageFactory.digitalReport(true));
         } catch (IOException ex) {
             LOGGER.error("Cannot enable reporting from device", ex);
         }
@@ -473,7 +527,7 @@ public class FirmataDevice implements IODevice {
         public void onEvent(Event event) {
             LOGGER.debug("Event name: {}, type: {}, timestamp: {}", new Object[]{event.getName(), event.getType(), event.getTimestamp()});
             for (Map.Entry<String, Object> entry : event.getBody().entrySet()) {
-                LOGGER.debug("{}: {}", entry.getKey(), entry.getValue());
+                LOGGER.debug(":{}: {}", entry.getKey(), entry.getValue());
             }
             LOGGER.debug("\n");
             switch (event.getName()) {

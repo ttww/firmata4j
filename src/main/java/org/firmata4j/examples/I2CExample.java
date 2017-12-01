@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package org.firmata4j;
+package org.firmata4j.examples;
 
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -50,6 +50,9 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import jssc.SerialNativeInterface;
 import jssc.SerialPortList;
+
+import org.firmata4j.I2CDevice;
+import org.firmata4j.IODevice;
 import org.firmata4j.firmata.FirmataDevice;
 import org.firmata4j.ssd1306.SSD1306;
 import org.firmata4j.ssd1306.MonochromeCanvas;

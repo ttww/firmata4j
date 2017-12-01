@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package org.firmata4j;
+package org.firmata4j.examples.pinboard;
 
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -30,40 +30,37 @@ import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import org.firmata4j.firmata.FirmataDevice;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
+
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import jssc.SerialNativeInterface;
-import jssc.SerialPortList;
-import org.firmata4j.ui.JPinboard;
+
+import org.firmata4j.IODevice;
+import org.firmata4j.firmata.FirmataDevice;
 
 /**
  * Example of usage {@link JPinboard}.
  * 
  * @author Oleg Kurbatov &lt;o.v.kurbatov@gmail.com&gt;
  */
-public class Example {
+public abstract class AbstractExample {
 
-    private static final JFrame INITIALIZATION_FRAME = new JFrame();
+    private final JFrame INITIALIZATION_FRAME = new JFrame();
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public void startup() throws IOException {
         try { // set look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
-            Logger.getLogger(Example.class.getName()).log(Level.SEVERE, "Cannot load system look and feel.", ex);
+            Logger.getLogger(AbstractExample.class.getName()).log(Level.SEVERE, "Cannot load system look and feel.", ex);
         }
+        
         // requesting a user to define the port name
         String port = requestPort();
         final IODevice device = new FirmataDevice(port);
@@ -107,38 +104,10 @@ public class Example {
             }
         });
     }
+    
+    protected abstract String requestPort();
 
-    @SuppressWarnings("unchecked")
-    private static String requestPort() {
-        JComboBox<String> portNameSelector = new JComboBox<>();
-        portNameSelector.setModel(new DefaultComboBoxModel<String>());
-        String[] portNames;
-        if (SerialNativeInterface.getOsType() == SerialNativeInterface.OS_MAC_OS_X) {
-            // for MAC OS default pattern of jssc library is too restrictive
-            portNames = SerialPortList.getPortNames("/dev/", Pattern.compile("tty\\..*"));
-        } else {
-            portNames = SerialPortList.getPortNames();
-        }
-        for (String portName : portNames) {
-            portNameSelector.addItem(portName);
-        }
-        if (portNameSelector.getItemCount() == 0) {
-            JOptionPane.showMessageDialog(null, "Cannot find any serial port", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
-        panel.add(new JLabel("Port "));
-        panel.add(portNameSelector);
-        if (JOptionPane.showConfirmDialog(null, panel, "Select the port", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            return portNameSelector.getSelectedItem().toString();
-        } else {
-            System.exit(0);
-        }
-        return "";
-    }
-
-    private static void showInitializationMessage() {
+    private void showInitializationMessage() {
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
                 @Override
@@ -162,7 +131,7 @@ public class Example {
         }
     }
 
-    private static void hideInitializationWindow() {
+    private  void hideInitializationWindow() {
         try {
             SwingUtilities.invokeAndWait(new Runnable() {
                 @Override

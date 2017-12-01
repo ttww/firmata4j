@@ -27,12 +27,12 @@
  *
  * @author Thomas Welsch &lt;ttww@gmx.de&gt;
  */
-package org.firmata4j.firmata.devices;
+package org.firmata4j.firmata.transport;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
-import org.firmata4j.firmata.FirmataDeviceInterface;
+import org.firmata4j.firmata.FirmataTransportInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,17 +42,31 @@ import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 
 
-public class SerialDevice implements FirmataDeviceInterface, SerialPortEventListener {
+/**
+ * Implementation of the serial transport layer to a firmata device.
+ *
+ * @author Oleg Kurbatov &lt;o.v.kurbatov@gmail.com&gt;
+ * @author Thomas Welsch &lt;ttww@gmx.de&gt;
+ */
+public class Serial implements FirmataTransportInterface, SerialPortEventListener {
 
     private SerialPort port;
     private BlockingQueue<byte[]> deviceReceiveQueue;
-    private static final Logger LOGGER = LoggerFactory.getLogger(SerialDevice.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Serial.class);
 
+    private int baudrate = SerialPort.BAUDRATE_57600;
     /**
      *
-     * @param portName
+     * @param portName  Format is "devicename[:baudrate]"
      */
-    public SerialDevice(String portName) {
+    public Serial(String portName) {
+        
+        int baudParam = portName.indexOf(':');
+        if (baudParam != -1) {
+            baudrate = Integer.parseInt(portName.substring(baudParam + 1));
+            portName = portName.substring(0, baudParam);
+        }
+         
         port = new SerialPort(portName);
     }
 
@@ -72,7 +86,7 @@ public class SerialDevice implements FirmataDeviceInterface, SerialPortEventList
         try {
             port.openPort();
             port.setParams(
-                    SerialPort.BAUDRATE_57600,
+                    baudrate,
                     SerialPort.DATABITS_8,
                     SerialPort.STOPBITS_1,
                     SerialPort.PARITY_NONE);
@@ -109,7 +123,8 @@ public class SerialDevice implements FirmataDeviceInterface, SerialPortEventList
     @Override
     public void writeBytes(byte[] msg) throws IOException {
         try {
-            port.writeBytes(msg);
+            boolean ok = port.writeBytes(msg);
+            if (!ok) throw new IOException("Cannot send message to device, writeBytes() failed");
         } catch (SerialPortException ex) {
             throw new IOException("Cannot send message to device", ex);
         }

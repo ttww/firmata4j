@@ -42,7 +42,7 @@ IODevice device = new FirmataDevice("/dev/ttyUSB0");
 If you need to adjust the baud rate:
 
 ```java
-IODevice device = new FirmataDevice("/dev/ttyUSB0:19200");  // only baudrate currently supported
+IODevice device = new FirmataDevice("/dev/ttyUSB0:19200");  // only baudrate is currently supported
 ```
 Default serial parameter are: 57600, 8 databits, 1 stopbit, no parity.
 

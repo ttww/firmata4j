@@ -31,7 +31,7 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author Thomas Welsch &lt;ttww@gmx.de&gt;
  */
-public interface FirmataDeviceInterface {
+public interface FirmataTransportInterface {
 
     /**
      *

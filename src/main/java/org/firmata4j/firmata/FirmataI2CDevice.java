@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.firmata4j.I2CDevice;
 import org.firmata4j.I2CEvent;
 import org.firmata4j.I2CListener;
@@ -70,7 +71,7 @@ public class FirmataI2CDevice implements I2CDevice {
 
     @Override
     public void tell(byte... data) throws IOException {
-        masterDevice.sendMessage(FirmataMessageFactory.i2cWriteRequest(address, data));
+        masterDevice.sendMessage("i2cWriteRequest", FirmataMessageFactory.i2cWriteRequest(address, data));
     }
 
     @Override
@@ -81,7 +82,7 @@ public class FirmataI2CDevice implements I2CDevice {
     @Override
     public void ask(int register, byte responseLength, I2CListener listener) throws IOException {
         callbacks.put(register, listener);
-        masterDevice.sendMessage(FirmataMessageFactory.i2cReadRequest(address, register, responseLength, false));
+        masterDevice.sendMessage("i2cReadRequest", FirmataMessageFactory.i2cReadRequest(address, register, responseLength, false));
     }
 
     @Override
@@ -98,7 +99,7 @@ public class FirmataI2CDevice implements I2CDevice {
     public boolean startReceivingUpdates(int register, byte messageLength) throws IOException {
         boolean result = receivingUpdates.compareAndSet(false, true);
         if (result) {
-            masterDevice.sendMessage(FirmataMessageFactory.i2cReadRequest(address, register, messageLength, true));
+            masterDevice.sendMessage("i2cReadRequest", FirmataMessageFactory.i2cReadRequest(address, register, messageLength, true));
         }
         return result;
     }
@@ -107,7 +108,7 @@ public class FirmataI2CDevice implements I2CDevice {
     public boolean startReceivingUpdates(byte messageLength) throws IOException {
         boolean result = receivingUpdates.compareAndSet(false, true);
         if (result) {
-            masterDevice.sendMessage(FirmataMessageFactory.i2cReadRequest(address, REGISTER_NOT_SET, messageLength, true));
+            masterDevice.sendMessage("i2cReadRequest", FirmataMessageFactory.i2cReadRequest(address, REGISTER_NOT_SET, messageLength, true));
         }
         return result;
     }
@@ -115,7 +116,7 @@ public class FirmataI2CDevice implements I2CDevice {
     @Override
     public void stopReceivingUpdates() throws IOException {
         if (receivingUpdates.compareAndSet(true, false)) {
-            masterDevice.sendMessage(FirmataMessageFactory.i2cStopContinuousRequest(address));
+            masterDevice.sendMessage("i2cStopContinuousRequest", FirmataMessageFactory.i2cStopContinuousRequest(address));
         }
     }
 
@@ -138,6 +139,7 @@ public class FirmataI2CDevice implements I2CDevice {
         }
     }
 
+    @SuppressWarnings("boxing")
     @Override
     public String toString() {
         return String.format("FirmataI2CDevice [address=0x%02X]", address);

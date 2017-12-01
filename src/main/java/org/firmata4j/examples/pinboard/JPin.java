@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package org.firmata4j.ui;
+package org.firmata4j.examples.pinboard;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;

@@ -1,0 +1,168 @@
+/* 
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oleg Kurbatov (o.v.kurbatov@gmail.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * Implementation of a serial firmata device.
+ *
+ * @author Thomas Welsch &lt;ttww@gmx.de&gt;
+ */
+package org.firmata4j.firmata.transport;
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+
+import org.firmata4j.firmata.FirmataTransportInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * Interface to abstract the device connection (serial/network) to a firmata device.
+ *
+ * @author Thomas Welsch &lt;ttww@gmx.de&gt;
+ */
+public class Network implements FirmataTransportInterface {
+
+    private BlockingQueue<byte[]> deviceReceiveQueue;
+    private static final Logger LOGGER = LoggerFactory.getLogger(Network.class);
+
+    private Socket socket;
+    private DataOutputStream out;
+    private DataInputStream in;
+    private InetAddress ip;
+    private int port;
+
+    /**
+     *
+     * @param ip
+     * @param port
+     */
+    public Network(InetAddress ip, int port) {
+        this.ip = ip;
+        this.port = port;
+    }
+
+    /* (non-Javadoc)
+     * @see org.firmata4j.firmata.FirmataDeviceInterface#isOpened()
+     */
+    @Override
+    public boolean isOpened() {
+        if (socket == null) return false;
+        return !socket.isClosed();
+    }
+
+    /* (non-Javadoc)
+     * @see org.firmata4j.firmata.FirmataDeviceInterface#openPort(java.util.concurrent.BlockingQueue)
+     */
+    @Override
+    public void openPort(BlockingQueue<byte[]> deviceReceiveQueue) throws IOException {
+        socket  = new Socket(ip, port);
+
+        out = new DataOutputStream(socket.getOutputStream());
+        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+      
+        this.deviceReceiveQueue = deviceReceiveQueue;
+        
+        ReaderThread reader = new ReaderThread();
+        reader.start();
+    }
+
+    class ReaderThread extends Thread {
+
+        public ReaderThread() {
+            setDaemon(true);
+            setName("ReaderThread for " + ip.getHostAddress() + ":" + port);
+        }
+        
+        @Override
+        public void run() {
+            byte[] buf = new byte[10];
+            
+            LOGGER.debug("Start reader");
+
+            
+            try {
+                while (true) {
+                    int readIn = in.read(buf);
+                    
+                    if (readIn != 1) System.err.println("Read " + readIn);
+                    if (readIn == -1) break;  // Connection closed
+                    
+                    // Copy the data to new buffer
+                    byte[] data = new byte[readIn];
+                    for (int i=0; i<readIn; i++) data[i] = buf[i];
+                    
+                    deviceReceiveQueue.offer(data);
+                }   // while
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+            LOGGER.debug("Stop reader");
+
+        }
+    }
+//    @Override
+//    public void serialEvent(SerialPortEvent event) {
+//        // queueing data from input buffer to processing by FSM logic
+//        if (event.isRXCHAR() && event.getEventValue() > 0) {
+//            try {
+//                while (!deviceReceiveQueue.offer(port.readBytes())) {
+//                    // trying to place bytes to queue until it succeeds
+//                }
+//            } catch (SerialPortException ex) {
+//                LOGGER.error("Cannot read from device", ex);
+//            }
+//        }
+//    }
+
+    /* (non-Javadoc)
+     * @see org.firmata4j.firmata.FirmataDeviceInterface#writeBytes(byte[])
+     */
+    @Override
+    public void writeBytes(byte[] msg) throws IOException {
+        out.write(msg);
+    }
+
+    /* (non-Javadoc)
+     * @see org.firmata4j.firmata.FirmataDeviceInterface#closePort()
+     */
+    @Override
+    public void closePort() throws IOException {
+        LOGGER.debug("closePort()");
+        out.close();
+        in.close();
+        socket.close();
+        out = null;
+        in = null;
+        socket = null;
+    }
+
+
+}

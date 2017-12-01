@@ -88,19 +88,19 @@ public class FirmataPin implements Pin {
         if (supports(mode)) {
             if (currentMode != mode) {
                 if (mode == Mode.SERVO) {
-                    getDevice().sendMessage(FirmataMessageFactory.servoConfig(pinId, minPulse, maxPulse));
+                    getDevice().sendMessage("servoConfig", FirmataMessageFactory.servoConfig(pinId, minPulse, maxPulse));
                     // The currentValue for a servo is unknown as the motor is 
                     // send to the 1.5ms position when pinStateRequest is invoked
                     currentValue = -1;
                 }
-                getDevice().sendMessage(FirmataMessageFactory.setMode(pinId, mode));
+                getDevice().sendMessage("setMode", FirmataMessageFactory.setMode(pinId, mode));
                 currentMode = mode;
                 IOEvent evt = new IOEvent(this);
                 getDevice().pinChanged(evt);
                 for (PinEventListener listener : listeners) {
                     listener.onModeChange(evt);
                 }
-                getDevice().sendMessage(FirmataMessageFactory.pinStateRequest(pinId));
+                getDevice().sendMessage("pinStateRequest", FirmataMessageFactory.pinStateRequest(pinId));
             }
         } else {
             throw new IllegalArgumentException(String.format("Pin %d does not support mode %s", pinId, mode));
@@ -131,6 +131,7 @@ public class FirmataPin implements Pin {
     public synchronized void setValue(long value) throws IOException, IllegalStateException {
         byte[] message;
         long newValue;
+        String info = "";
         if (currentMode == Mode.OUTPUT) {
             //have to calculate the value of whole port (8-pin set) the pin sits in
             byte portId = (byte) (pinId / 8);
@@ -150,15 +151,17 @@ public class FirmataPin implements Pin {
                 portValue &= ((byte) ~bitmask);
             }
             message = FirmataMessageFactory.setDigitalPinValue(portId, portValue);
+            info = "setDigitalPinValue";
             newValue = val ? 1 : 0;
         } else if (currentMode == Mode.ANALOG || currentMode == Mode.PWM || currentMode == Mode.SERVO) {
             message = FirmataMessageFactory.setAnalogPinValue(pinId, value);
+            info = "setAnalogPinValue";
             newValue = value;
         } else {
             throw new IllegalStateException(String.format("Port %d is in %s mode and its value cannot be set.", pinId, currentMode));
         }
         if (currentValue != newValue) {
-            device.sendMessage(message);
+            device.sendMessage(info, message);
             updateValue(value);
         }
     }
@@ -185,7 +188,7 @@ public class FirmataPin implements Pin {
      *
      * @param mode the mode
      */
-    void addSupprotedMode(Mode mode) {
+    void addSupportedMode(Mode mode) {
         supportedModes.add(mode);
     }
 

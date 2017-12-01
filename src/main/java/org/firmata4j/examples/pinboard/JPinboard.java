@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package org.firmata4j.ui;
+package org.firmata4j.examples.pinboard;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
