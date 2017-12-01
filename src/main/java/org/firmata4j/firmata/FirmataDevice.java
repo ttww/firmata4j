@@ -275,7 +275,7 @@ public class FirmataDevice implements IODevice {
         device.writeBytes(msg);
     }
 
-    private String toHex(byte[] msg) {
+    public static String toHex(byte[] msg) {
         StringBuilder sb = new StringBuilder();
         for (byte b : msg) {
             if (sb.length() != 0) sb.append(',');
@@ -392,9 +392,6 @@ public class FirmataDevice implements IODevice {
         } else {
             // if the pin supports some modes, we ask for its current mode and value
             try {
-                // twtwtw
-                try { Thread.sleep(500); } catch (InterruptedException eee) {eee.printStackTrace();}
-                
                 sendMessage("pinStateRequest", FirmataMessageFactory.pinStateRequest(pinId));
             } catch (IOException ex) {
                 LOGGER.error(String.format("Error requesting state of pin %d", pin.getIndex()), ex);
@@ -410,34 +407,21 @@ public class FirmataDevice implements IODevice {
     private void onPinStateRecieve(Event event) {
         byte pinId = (Byte) event.getBodyItem(PIN_ID);
         
-        LOGGER.debug("onPinStateRecieve: pinId = {}, pins.size = {}", pinId, pins.size());
-
         FirmataPin pin = pins.get(pinId);
         if (pin.getMode() == null) {
-            LOGGER.debug("onPinStateRecieve: 1");
-
             pin.initMode(Pin.Mode.resolve((Byte) event.getBodyItem(PIN_MODE)));
             pin.initValue((Long) event.getBodyItem(PIN_VALUE));
         } else {
-            LOGGER.debug("onPinStateRecieve: 2");
             pin.updateValue((Long) event.getBodyItem(PIN_VALUE));
         }
 
-        // twtwtw
-        try { Thread.sleep(500); } catch (InterruptedException eee) {eee.printStackTrace();}
-        LOGGER.debug("onPinStateRecieve: 3");
-
         if (initializedPins.incrementAndGet() == pins.size()) {
             try {
-                LOGGER.debug("onPinStateRecieve: 4");
                 sendMessage("ANALOG_MAPPING_REQUEST", FirmataMessageFactory.ANALOG_MAPPING_REQUEST);
             } catch (IOException e) {
-                LOGGER.debug("onPinStateRecieve: 6");
                 LOGGER.error("Error on request analog mapping", e);
             }
         }
-        LOGGER.debug("onPinStateRecieve: 6");
-
     }
 
     /**

@@ -33,6 +33,8 @@ import static org.firmata4j.firmata.parser.FirmataToken.PIN_SUPPORTED_MODES;
 import org.firmata4j.fsm.AbstractState;
 import org.firmata4j.fsm.Event;
 import org.firmata4j.fsm.FiniteStateMachine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This state parses capability response and fires an event that contains
@@ -44,7 +46,7 @@ import org.firmata4j.fsm.FiniteStateMachine;
  */
 public class ParsingCapabilityResponseState extends AbstractState {
 
-//    private static final Logger LOGGER = LoggerFactory.getLogger(ParsingCapabilityResponseState.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParsingCapabilityResponseState.class);
 
     private byte pinId;
 
@@ -54,17 +56,21 @@ public class ParsingCapabilityResponseState extends AbstractState {
 
     @Override
     public void process(byte b) {
-//        LOGGER.debug("Parse " + Integer.toHexString(b & 0xff));
         
         if (b == END_SYSEX) {
             transitTo(WaitingForMessageState.class);
         } else if (b == 127) {
             byte[] buffer = getBuffer();
-            byte[] supportedModes = new byte[buffer.length / 2 + 1];
+            byte[] supportedModes = new byte[buffer.length / 2];
+
+//            LOGGER.debug("CapabilityResponse size = {}", buffer.length);
+//            LOGGER.debug("CapabilityResponse buf  = {}", FirmataDevice.toHex(buffer));
+
             for (int i = 0; i < buffer.length; i += 2) {
                 //every second byte contains mode's resolution of pin
                 supportedModes[i / 2] = buffer[i];
             }
+            
             Event evt = new Event(PIN_CAPABILITIES_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE);
             evt.setBodyItem(PIN_ID, pinId);
             evt.setBodyItem(PIN_SUPPORTED_MODES, supportedModes);
