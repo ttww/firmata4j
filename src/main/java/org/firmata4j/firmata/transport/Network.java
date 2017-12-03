@@ -29,7 +29,6 @@
  */
 package org.firmata4j.firmata.transport;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -58,6 +57,8 @@ public class Network implements FirmataTransportInterface {
     private InetAddress ip;
     private int port;
 
+    private  PacketCounter packetCounter = new PacketCounter();
+    
     /**
      *
      * @param ip
@@ -85,7 +86,7 @@ public class Network implements FirmataTransportInterface {
         socket  = new Socket(ip, port);
 
         out = new DataOutputStream(socket.getOutputStream());
-        in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+        in = new DataInputStream(socket.getInputStream());
       
         this.deviceReceiveQueue = deviceReceiveQueue;
         
@@ -102,17 +103,17 @@ public class Network implements FirmataTransportInterface {
         
         @Override
         public void run() {
-            byte[] buf = new byte[10];
+            byte[] buf = new byte[100];
             
             LOGGER.debug("Start reader");
 
-            
             try {
                 while (true) {
                     int readIn = in.read(buf);
                     
-                    if (readIn != 1) System.err.println("Read " + readIn);
                     if (readIn == -1) break;  // Connection closed
+                    
+                    packetCounter.count(readIn);
                     
                     // Copy the data to new buffer
                     byte[] data = new byte[readIn];

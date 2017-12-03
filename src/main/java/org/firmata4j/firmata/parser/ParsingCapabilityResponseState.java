@@ -74,6 +74,7 @@ public class ParsingCapabilityResponseState extends AbstractState {
             Event evt = new Event(PIN_CAPABILITIES_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE);
             evt.setBodyItem(PIN_ID, pinId);
             evt.setBodyItem(PIN_SUPPORTED_MODES, supportedModes);
+            
             publish(evt);
             ParsingCapabilityResponseState nextState = new ParsingCapabilityResponseState(getFiniteStateMashine());
             nextState.setPinId(++pinId);

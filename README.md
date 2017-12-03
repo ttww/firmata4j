@@ -3,6 +3,10 @@
   
 ___
 __This is a development fork for adding network capabilities!__
+
+  This fork is working, but needs the [ConfigurableFirmata Packet-Buffer fork](https://github.com/ttww/ConfigurableFirmata/tree/Packet-Buffer) to avoid, that the ESP is sending each byte in a separate WiFi packet.
+  The Pull/Merge process is currently on the way.
+  
 ___
 
 ## firmata4j
@@ -46,7 +50,7 @@ IODevice device = new FirmataDevice("/dev/ttyUSB0:19200");  // only baudrate is 
 ```
 Default serial parameter are: 57600, 8 databits, 1 stopbit, no parity.
 
-### Network connection (WORK IN PROGRESS!):
+### Network connection:
 ```java
 // construct the Firmata device instance using a firmata network server (eg. via wifi)
 IODevice device = new FirmataDevice("192.168.10.20:3030");
