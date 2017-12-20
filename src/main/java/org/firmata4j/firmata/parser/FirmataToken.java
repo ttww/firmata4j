@@ -101,6 +101,7 @@ public interface FirmataToken {
     public static final byte SERIAL_MESSAGE          = 0x60; // communicate with serial devices, including other boards
     public static final byte ENCODER_DATA            = 0x61; // reply with encoders current positions
 
+    // Counter things should go to CounterMessageFactory...
     public static final byte COUNTER_CONFIG          = 0x63; // config IRQ counter module
     public static final byte COUNTER_QUERY           = 0x64; // ask for counter value(s)
     public static final byte COUNTER_RESPONSE        = 0x65; // reply with for counter value(s)

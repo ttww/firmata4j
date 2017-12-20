@@ -33,6 +33,7 @@ import java.util.Set;
 import org.firmata4j.IOEvent;
 import org.firmata4j.Pin;
 import org.firmata4j.PinEventListener;
+import org.firmata4j.firmata.counter.CounterMessageFactory;
 
 /**
  * This class contains implementation of Firmata pin.
@@ -93,20 +94,25 @@ public class FirmataPin implements Pin {
                     // send to the 1.5ms position when pinStateRequest is invoked
                     currentValue = -1;
                 }
-                getDevice().sendMessage("setMode", FirmataMessageFactory.setMode(pinId, mode));
-                currentMode = mode;
-                IOEvent evt = new IOEvent(this);
-                getDevice().pinChanged(evt);
-                for (PinEventListener listener : listeners) {
-                    listener.onModeChange(evt);
-                }
-                getDevice().sendMessage("pinStateRequest", FirmataMessageFactory.pinStateRequest(pinId));
+                
+                setModeAndInformListener(mode);
             }
         } else {
             throw new IllegalArgumentException(String.format("Pin %d does not support mode %s", pinId, mode));
         }
     }
 
+    private void setModeAndInformListener(Mode mode) throws IOException {
+        getDevice().sendMessage("setMode", FirmataMessageFactory.setMode(pinId, mode));
+        currentMode = mode;
+        IOEvent evt = new IOEvent(this);
+        getDevice().pinChanged(evt);
+        for (PinEventListener listener : listeners) {
+            listener.onModeChange(evt);
+        }
+        getDevice().sendMessage("pinStateRequest", FirmataMessageFactory.pinStateRequest(pinId));
+    }
+    
     @Override
     public boolean supports(Mode mode) {
         return supportedModes.contains(mode);
@@ -184,6 +190,19 @@ public class FirmataPin implements Pin {
         listeners.clear();
     }
     
+    @Override
+    public void setCounterMode(byte config, int collectTime) throws IOException, IllegalArgumentException {
+       
+       if (!supports(Mode.COUNTER)) {
+           throw new IllegalArgumentException(String.format("Pin %d does not support mode %s", Byte.valueOf(pinId), Mode.COUNTER));
+       }
+
+       // We don't avoid multiple setCounterMode() calls with caching in currentMode.
+       // This allows the reconfiguration of collectTime.
+       setModeAndInformListener(Mode.COUNTER);
+       getDevice().sendMessage("counterConfig", CounterMessageFactory.configureCounterPins(pinId, config, collectTime));
+    }
+
 
     /**
      * Adds supported mode to the pin.

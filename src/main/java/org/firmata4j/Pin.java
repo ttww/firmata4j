@@ -163,6 +163,15 @@ public interface Pin {
     public void setServoMode(int minPulse, int maxPulse) throws IOException, IllegalArgumentException;
 
     /**
+     *
+     * @param config       Configuration of the IRQ counter (RISING, FALLING....)
+     * @param collectTime  ms to collect signal changes
+     * @throws IOException
+     * @throws IllegalArgumentException
+     */
+    public void setCounterMode(byte config, int collectTime) throws IOException, IllegalArgumentException;
+
+    /**
      * Checks if the pin supports the mode
      *
      * @param mode the mode

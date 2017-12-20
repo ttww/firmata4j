@@ -24,16 +24,22 @@
 
 package org.firmata4j.firmata.parser;
 
+import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MAPPING_RESPONSE;
+import static org.firmata4j.firmata.parser.FirmataToken.CAPABILITY_RESPONSE;
+import static org.firmata4j.firmata.parser.FirmataToken.EXTENDED_ANALOG;
+import static org.firmata4j.firmata.parser.FirmataToken.I2C_REPLY;
+import static org.firmata4j.firmata.parser.FirmataToken.PIN_STATE_RESPONSE;
+import static org.firmata4j.firmata.parser.FirmataToken.REPORT_FIRMWARE;
+import static org.firmata4j.firmata.parser.FirmataToken.STRING_DATA;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.firmata4j.fsm.AbstractState;
 import org.firmata4j.fsm.FiniteStateMachine;
 import org.firmata4j.fsm.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.firmata4j.firmata.parser.FirmataToken.*;
 
 /**
  * This state parses type of sysex message and transfers FSM to the state which
@@ -59,6 +65,10 @@ public class ParsingSysexMessageState extends AbstractState {
         STATES.put(I2C_REPLY,ParsingI2CMessageState.class);
     }
 
+    public static void addSysexMessageParser(byte command, Class<? extends State> parser) {
+        STATES.put(Byte.valueOf(command), parser);
+    }
+    
     public ParsingSysexMessageState(FiniteStateMachine fsm) {
         super(fsm);
     }
