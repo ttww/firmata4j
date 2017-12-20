@@ -123,5 +123,13 @@ public class IOEvent {
     public long getTimestamp() {
         return timestamp;
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "IOEvent [timestamp=" + timestamp + ", pin=" + pin + ", value=" + value + "]";
+    }
     
 }

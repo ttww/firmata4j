@@ -26,6 +26,8 @@ package org.firmata4j.examples.pinboard;
 
 import java.io.IOException;
 
+import org.firmata4j.boards.NodeMCUBoard;
+
 /**
  * Example of usage {@link JPinboard}.
  * 
@@ -33,7 +35,7 @@ import java.io.IOException;
  */
 public class NetworkExample extends AbstractExample {
 
-    private final static String DEFAULT_TRANSPORT = "192.168.0.31:3030";
+    private final static String DEFAULT_TRANSPORT = "192.168.0.34:3030";
     
     private String transportChannel;
     
@@ -44,7 +46,7 @@ public class NetworkExample extends AbstractExample {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         NetworkExample nw = new NetworkExample(args.length > 0 ? args[0] : null);
-        nw.startup();
+        nw.startup(new NodeMCUBoard());
     }
 
     @Override

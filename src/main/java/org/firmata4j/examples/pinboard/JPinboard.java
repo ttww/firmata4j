@@ -26,9 +26,13 @@ package org.firmata4j.examples.pinboard;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
 import org.firmata4j.IODevice;
+import org.firmata4j.boards.BoardInterface;
+import org.firmata4j.boards.UnknownBoard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +45,7 @@ public class JPinboard extends JPanel {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JPinboard.class);
 
-    public JPinboard(IODevice model) {
+    public JPinboard(IODevice model, BoardInterface board) {
         GridBagLayout layout = new GridBagLayout();
 
         setLayout(layout);
@@ -55,10 +59,13 @@ public class JPinboard extends JPanel {
             add(pin);
             constraints = new GridBagConstraints();
             constraints.gridy = 1;
-            JLabel label = new JLabel(String.valueOf(i));
+            JLabel label = new JLabel(board.getPinName(i));
             layout.setConstraints(label, constraints);
             add(label);
         }
     }
-    
+
+    public JPinboard(IODevice model) {
+        this(model, new UnknownBoard());
+    }
 }

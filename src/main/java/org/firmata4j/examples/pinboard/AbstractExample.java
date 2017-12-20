@@ -43,6 +43,7 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
 import org.firmata4j.IODevice;
+import org.firmata4j.boards.BoardInterface;
 import org.firmata4j.firmata.FirmataDevice;
 
 /**
@@ -54,7 +55,7 @@ public abstract class AbstractExample {
 
     private final JFrame INITIALIZATION_FRAME = new JFrame();
 
-    public void startup() throws IOException {
+    public void startup(final BoardInterface board) throws IOException {
         try { // set look and feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
@@ -84,7 +85,7 @@ public abstract class AbstractExample {
                 constraints.fill = GridBagConstraints.BOTH;
                 constraints.weightx = 1;
                 constraints.weighty = 1;
-                JPinboard pinboard = new JPinboard(device);
+                JPinboard pinboard = new JPinboard(device, board);
                 layout.setConstraints(pinboard, constraints);
                 mainFrame.add(pinboard);
                 mainFrame.pack();

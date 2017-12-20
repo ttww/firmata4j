@@ -85,7 +85,7 @@ public class FirmataDevice implements IODevice {
     private final BlockingQueue<byte[]> deviceReceiveQueue = new ArrayBlockingQueue<>(128);
     private final FirmataParser parser = new FirmataParser(deviceReceiveQueue);
     private final Thread parserExecutor = new Thread(parser, "firmata-parser-thread");
-//    private final SerialPort device;
+    private final StayConnectedThread stayConnectedThread = new StayConnectedThread();
     private final FirmataTransportInterface device;
     private final Set<IODeviceEventListener> listeners = Collections.synchronizedSet(new LinkedHashSet<IODeviceEventListener>());
     private final List<FirmataPin> pins = Collections.synchronizedList(new ArrayList<FirmataPin>());
@@ -168,6 +168,7 @@ public class FirmataDevice implements IODevice {
                	parserExecutor.interrupt();
                 throw ex;
             }
+            stayConnectedThread.start();
         }
     }
 
@@ -270,7 +271,7 @@ public class FirmataDevice implements IODevice {
      * @param msg the Firmata message
      * @throws IOException when writing fails
      */
-    void sendMessage(String info, byte[] msg) throws IOException {
+    synchronized void sendMessage(String info, byte[] msg) throws IOException {
         LOGGER.debug("Write " + info + ": " + toHex(msg));
         device.writeBytes(msg);
     }
@@ -381,11 +382,24 @@ public class FirmataDevice implements IODevice {
         byte pinId = (Byte) event.getBodyItem(PIN_ID);
         
         LOGGER.debug("onCapabilitiesReceive of pinId " + pinId);
-        FirmataPin pin = new FirmataPin(this, pinId);
+        FirmataPin pin = null;
+        
+        // Lookup for the pin, don't use the index which may not correct during setup.
+        for (FirmataPin iPin : pins) {
+            if (iPin.getIndex() == pinId) {
+                pin = iPin;
+                break;
+            }
+            
+        }
+        if (pin == null) {
+            pin = new FirmataPin(this, pinId);
+            pins.add(pin.getIndex(), pin);
+        }
+        
         for (byte i : (byte[]) event.getBodyItem(PIN_SUPPORTED_MODES)) {
             pin.addSupportedMode(Pin.Mode.resolve(i));
         }
-        pins.add(pin.getIndex(), pin);
         if (pin.getSupportedModes().isEmpty()) {
             // if the pin has no supported modes, its initialization is already done
             initializedPins.incrementAndGet();
@@ -404,7 +418,7 @@ public class FirmataDevice implements IODevice {
      *
      * @param event the event of receiving pin state data
      */
-    private void onPinStateRecieve(Event event) {
+    private void onPinStateReceive(Event event) {
         byte pinId = (Byte) event.getBodyItem(PIN_ID);
         
         FirmataPin pin = pins.get(pinId);
@@ -453,6 +467,7 @@ public class FirmataDevice implements IODevice {
      */
     private void onAnalogMessageReceive(Event event) {
         int analogId = (Integer) event.getBodyItem(PIN_ID);
+
         if (analogMapping != null && analogMapping.get(analogId) != null) {
             int pinId = analogMapping.get(analogId);
             if (pinId < pins.size()) {
@@ -525,7 +540,7 @@ public class FirmataDevice implements IODevice {
                     onCapabilitiesReceive(event);
                     break;
                 case PIN_STATE:
-                    onPinStateRecieve(event);
+                    onPinStateReceive(event);
                     break;
                 case ANALOG_MAPPING_MESSAGE:
                     onAnalogMappingReceive(event);
@@ -563,6 +578,49 @@ public class FirmataDevice implements IODevice {
             }
         }
 
-    }
+    }   // FirmataParser
 
+    private class  StayConnectedThread extends Thread {
+        public StayConnectedThread() {
+            setDaemon(true);
+            setName("StayConnectedThread");
+        }
+        
+        @Override
+        public void run() {
+            while (true) {
+//                System.err.println("Check Connection");
+                try {
+                    sleep(1000);
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                    break;
+                }
+                
+                if (!device.isOpened()) {
+                    System.err.println("Try reconnect connection");
+                    try {
+                        initializedPins.set(0); // Restart the setup
+                        device.openPort(deviceReceiveQueue);
+                     } catch (IOException e) {
+                         e.printStackTrace();
+                         continue;
+                     }
+                    try {
+                        sendMessage("REQUEST_FIRMWARE", FirmataMessageFactory.REQUEST_FIRMWARE);
+                     } catch (IOException e) {
+                         e.printStackTrace();
+                         continue;
+                     }
+
+                }
+
+                
+            }   // while
+            
+        }
+        
+    }  // StayConnectedThread
+    
 }

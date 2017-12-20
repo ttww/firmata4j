@@ -173,12 +173,14 @@ public class FirmataPin implements Pin {
 
     @Override
     public void removeEventListener(PinEventListener listener) {
+        System.err.println("removeEventListener");
         listeners.remove(listener);
     }
     
     
     @Override
     public void removeAllEventListeners() {
+        System.err.println("removeAllEventListeners");
         listeners.clear();
     }
     

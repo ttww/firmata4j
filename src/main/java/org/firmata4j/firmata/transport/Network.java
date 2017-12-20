@@ -34,6 +34,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.BlockingQueue;
 
 import org.firmata4j.firmata.FirmataTransportInterface;
@@ -74,7 +75,13 @@ public class Network implements FirmataTransportInterface {
      */
     @Override
     public boolean isOpened() {
+//        System.err.println("Socket = " + socket);
         if (socket == null) return false;
+//        System.err.println("Socket.isConnected()      = " + socket.isConnected());
+//        System.err.println("Socket.isInputShutdown()  = " + socket.isInputShutdown());
+//        System.err.println("Socket.isOutputShutdown() = " + socket.isOutputShutdown());
+//        System.err.println("Socket.isBound()          = " + socket.isBound());
+//        System.err.println("Socket.isClosed()         = " + socket.isClosed());
         return !socket.isClosed();
     }
 
@@ -82,16 +89,25 @@ public class Network implements FirmataTransportInterface {
      * @see org.firmata4j.firmata.FirmataDeviceInterface#openPort(java.util.concurrent.BlockingQueue)
      */
     @Override
-    public void openPort(BlockingQueue<byte[]> deviceReceiveQueue) throws IOException {
-        socket  = new Socket(ip, port);
-
-        out = new DataOutputStream(socket.getOutputStream());
-        in = new DataInputStream(socket.getInputStream());
+    public void openPort(@SuppressWarnings("hiding") BlockingQueue<byte[]> deviceReceiveQueue) throws IOException {
+        connect();
       
         this.deviceReceiveQueue = deviceReceiveQueue;
         
         ReaderThread reader = new ReaderThread();
         reader.start();
+    }
+
+    private void connect() throws IOException {
+        System.err.println("Connect");
+        socket  = new Socket(ip, port);
+        socket.setReuseAddress(true);
+        socket.setSoTimeout(1500);
+        socket.setSoLinger(true, 1500);
+        socket.setSoTimeout(1500);
+        out = new DataOutputStream(socket.getOutputStream());
+        in = new DataInputStream(socket.getInputStream());
+//        System.err.println("Connect done: " + socket.isBound() + " = " + socket);
     }
 
     class ReaderThread extends Thread {
@@ -109,9 +125,17 @@ public class Network implements FirmataTransportInterface {
 
             try {
                 while (true) {
-                    int readIn = in.read(buf);
+                    int readIn;
+                    try {
+                        readIn = in.read(buf);
+                    }
                     
-                    if (readIn == -1) break;  // Connection closed
+                    catch (SocketTimeoutException e) {
+                        break;  // We try to reconnect, hearthbeats (1*second) missing
+                    }
+                    if (readIn == -1) {
+                        break;  // Connection closed
+                    }
                     
                     packetCounter.count(readIn);
                     
@@ -126,22 +150,14 @@ public class Network implements FirmataTransportInterface {
                 e.printStackTrace();
             }
             LOGGER.debug("Stop reader");
-
+            try {
+                closePort();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
-//    @Override
-//    public void serialEvent(SerialPortEvent event) {
-//        // queueing data from input buffer to processing by FSM logic
-//        if (event.isRXCHAR() && event.getEventValue() > 0) {
-//            try {
-//                while (!deviceReceiveQueue.offer(port.readBytes())) {
-//                    // trying to place bytes to queue until it succeeds
-//                }
-//            } catch (SerialPortException ex) {
-//                LOGGER.error("Cannot read from device", ex);
-//            }
-//        }
-//    }
 
     /* (non-Javadoc)
      * @see org.firmata4j.firmata.FirmataDeviceInterface#writeBytes(byte[])
@@ -157,9 +173,9 @@ public class Network implements FirmataTransportInterface {
     @Override
     public void closePort() throws IOException {
         LOGGER.debug("closePort()");
-        out.close();
-        in.close();
-        socket.close();
+        if (out != null) out.close();
+        if (in != null) in.close();
+        if (socket != null) socket.close();
         out = null;
         in = null;
         socket = null;

@@ -100,6 +100,11 @@ public interface FirmataToken {
     public static final byte RESERVED_COMMAND        = 0x00; // 2nd SysEx data byte is a chip-specific command (AVR, PIC, TI, etc).
     public static final byte SERIAL_MESSAGE          = 0x60; // communicate with serial devices, including other boards
     public static final byte ENCODER_DATA            = 0x61; // reply with encoders current positions
+
+    public static final byte COUNTER_CONFIG          = 0x63; // config IRQ counter module
+    public static final byte COUNTER_QUERY           = 0x64; // ask for counter value(s)
+    public static final byte COUNTER_RESPONSE        = 0x65; // reply with for counter value(s)
+    
     public static final byte SERVO_CONFIG            = 0x70; // set max angle, minPulse, maxPulse, freq
     public static final byte STRING_DATA             = 0x71; // a string message with 14-bits per byte
     public static final byte STEPPER_DATA            = 0x72; // control a stepper motor
@@ -134,8 +139,9 @@ public interface FirmataToken {
     public static final byte PIN_MODE_ENCODER        = 0x09; // pin configured for rotary encoders
     public static final byte PIN_MODE_SERIAL         = 0x0A; // pin configured for serial communication
     public static final byte PIN_MODE_PULLUP         = 0x0B; // enable internal pull-up resistor for pin
+    public static final byte PIN_MODE_COUNTER        = 0x0C; // enable IRQ counter for pin
     public static final byte PIN_MODE_IGNORE         = 0x7F; // pin configured to be ignored by digitalWrite and capabilityResponse
-    public static final byte TOTAL_PIN_MODES         = 13;
+    public static final byte TOTAL_PIN_MODES         = 14;
 
     public static final byte I2C_WRITE                = 0X00;
     public static final byte I2C_READ                 = 0X08;

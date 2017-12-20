@@ -34,6 +34,8 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import org.firmata4j.boards.UnknownBoard;
+
 import jssc.SerialNativeInterface;
 import jssc.SerialPortList;
 
@@ -45,7 +47,7 @@ import jssc.SerialPortList;
 public class SerialExample extends AbstractExample {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        new SerialExample().startup();
+        new SerialExample().startup( new UnknownBoard());
     }
 
     @Override

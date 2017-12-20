@@ -26,6 +26,7 @@ package org.firmata4j;
 
 import java.io.IOException;
 import java.util.Set;
+
 import org.firmata4j.firmata.parser.FirmataToken;
 
 /**
@@ -89,6 +90,10 @@ public interface Pin {
          * Enable internal pull-up resistor for pin
          */
         PULLUP,
+        /**
+         * Enable IRQ counter for pin
+         */
+        COUNTER,
         
         // add new modes here
         
