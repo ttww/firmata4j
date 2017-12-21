@@ -99,7 +99,6 @@ public class Network implements FirmataTransportInterface {
     }
 
     private void connect() throws IOException {
-        System.err.println("Connect");
         socket  = new Socket(ip, port);
         socket.setReuseAddress(true);
         socket.setSoTimeout(1500);

@@ -3,6 +3,8 @@ package org.firmata4j.firmata.counter;
 
 import static org.firmata4j.firmata.parser.FirmataToken.END_SYSEX;
 
+import java.util.LinkedList;
+
 import org.firmata4j.firmata.parser.FirmataToken;
 import org.firmata4j.firmata.parser.WaitingForMessageState;
 import org.firmata4j.fsm.AbstractState;
@@ -23,7 +25,7 @@ public class ParsingCounterMessagesState extends AbstractState {
                 |  (buf[idx + 3] & 0xff);
     }
 
-    private Event[] eventsToSend = new Event[8];
+    private LinkedList<Event> eventsToSend = new LinkedList<>();
     /*
      * (non-Javadoc)
      * 
@@ -38,40 +40,28 @@ public class ParsingCounterMessagesState extends AbstractState {
 //            System.err.println("Bits = " + Integer.toHexString((int) buffer[0] & 0xff));
 //            System.err.println("Size = " + buffer.length);
 
-            byte counterBits = buffer[0];
+            eventsToSend.clear();
             
-            byte counterBit = 1;
-            byte idx = 1;
-            for (byte bit = 0; bit < 8; bit++) {
-                
-                if ((counterBits & counterBit) != 0) {
-                    int value = readInt4(buffer, idx);
-                    idx += 4;
-
-                    eventsToSend[bit] = new Event(FirmataToken.COUNTER_MESSAGE, FirmataToken.FIRMATA_MESSAGE_EVENT_TYPE);
-                    eventsToSend[bit].setBodyItem(FirmataToken.COUNTER_ID, Byte.valueOf(bit));
-                    eventsToSend[bit].setBodyItem(FirmataToken.COUNTER_VALUE, Integer.valueOf(value));
-                }
-                else {
-                    eventsToSend[bit] = null;
-                }
-                
-                counterBit <<= 1;
+            byte idx = 0;
+            while  (idx < buffer.length) {
+                byte pin   = buffer[idx++];
+                long value = readInt4(buffer, idx);
+                idx += 4;
+                // We are using PIN_ID* keys, so the counter values can be send as pin change events:
+                Event event = new Event(FirmataToken.COUNTER_MESSAGE, FirmataToken.FIRMATA_MESSAGE_EVENT_TYPE);
+                event.setBodyItem(FirmataToken.PIN_ID, Byte.valueOf(pin));
+                event.setBodyItem(FirmataToken.PIN_VALUE, Long.valueOf(value));
+                eventsToSend.add(event);
             }
 
             transitTo(WaitingForMessageState.class);
             
-            for (byte bit = 0; bit < 8; bit++) {
-                if (eventsToSend[bit] != null) {
-                    publish(eventsToSend[bit]);
-                    eventsToSend[bit] = null;
-                }
+            for (Event event : eventsToSend) {
+                publish(event);
             }
         }
         else {
             bufferize(b);
-
-            // System.err.println("Receive " + Integer.toHexString((int) b & 0xff));
         }
     }
 }

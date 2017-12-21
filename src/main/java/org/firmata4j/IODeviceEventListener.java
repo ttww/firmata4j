@@ -57,11 +57,15 @@ public interface IODeviceEventListener {
     public void onPinChange(IOEvent event);
 
     /**
-     * Invoked when a string message has been received from the device.
+     * Invoked when a message (String, Error or other) has been received from the device.
      * 
      * @param event the event
      * @param message the message
      */
     public void onMessageReceive(IOEvent event, String message);
 
+    public void connected();
+    public void disconnected();
+    public void heartbeat();
+    
 }

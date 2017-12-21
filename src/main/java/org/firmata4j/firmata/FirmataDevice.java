@@ -26,12 +26,8 @@ package org.firmata4j.firmata;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MAPPING;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MAPPING_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MESSAGE_RESPONSE;
-import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_ID;
 import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_MESSAGE;
-import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_VALUE;
 import static org.firmata4j.firmata.parser.FirmataToken.DIGITAL_MESSAGE_RESPONSE;
-import static org.firmata4j.firmata.parser.FirmataToken.ERROR_DESCRIPTION;
-import static org.firmata4j.firmata.parser.FirmataToken.ERROR_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MAJOR_VERSION;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MINOR_VERSION;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMWARE_MESSAGE;
@@ -512,11 +508,25 @@ public class FirmataDevice implements IODevice {
         }
     }
 
-    private void onStringMessageReceive(Event event) {
+    private void onMessageReceive(Event event) {
         String message = (String) event.getBodyItem(STRING_MESSAGE);
-        IOEvent evt = new IOEvent(this);
+        Map<String, Object> map = event.getBody();
+        map.put("name", event.getName());
+        IOEvent evt = new IOEvent(this, map, event.getTimestamp());
         for (IODeviceEventListener listener : listeners) {
             listener.onMessageReceive(evt, message);
+        }
+    }
+
+    private void sendConnectedToListeners() {
+        for (IODeviceEventListener listener : listeners) {
+            listener.connected();
+        }
+    }
+
+    private void sendDisconnectedToListeners() {
+        for (IODeviceEventListener listener : listeners) {
+            listener.disconnected();
         }
     }
 
@@ -558,25 +568,27 @@ public class FirmataDevice implements IODevice {
                 case DIGITAL_MESSAGE_RESPONSE:
                     onDigitalMessageReceive(event);
                     break;
-                case STRING_MESSAGE:
-                    onStringMessageReceive(event);
-                    break;
                 case I2C_MESSAGE:
                     onI2cMessageReceive(event);
                     break;
-                case ERROR_MESSAGE:
-                    System.err.println("Got Error Message " + event.getBodyItem(ERROR_DESCRIPTION));
-                    break;
-                    
                 case COUNTER_MESSAGE:
-                    System.err.println("Got Counter Message " + event.getBodyItem(COUNTER_ID) + " / " + event.getBodyItem(COUNTER_VALUE));
+                    System.err.println("Got Counter Message " + event.getBodyItem(PIN_ID) + " / " + event.getBodyItem(PIN_VALUE));
+                    onPinStateReceive(event);
                     break;
-                    
                 case FiniteStateMachine.FSM_IS_IN_TERMINAL_STATE:
                     // should never happen but who knows
                     throw new IllegalStateException("Parser has reached the terminal state. It may be due receiving of unsupported command.");
+// All the following events are send via the onMessageReceive() method.
+// This allows easier extensibility.
+//                case STRING_MESSAGE:
+//                    onMessageReceive(event);
+//                    break;
+//                case ERROR_MESSAGE:
+//                    System.err.println("Got Error Message " + event.getBodyItem(ERROR_DESCRIPTION));
+//                    break;
+                    
                 default:
-                    System.err.println("Unknown Message " + event.getName());
+                    onMessageReceive(event);
             }
         }
 
@@ -616,6 +628,7 @@ public class FirmataDevice implements IODevice {
                 }
                 
                 if (!device.isOpened()) {
+                    sendDisconnectedToListeners();
                     System.err.println("Try reconnect connection");
                     try {
                         initializedPins.set(0); // Restart the setup
@@ -624,13 +637,13 @@ public class FirmataDevice implements IODevice {
                          e.printStackTrace();
                          continue;
                      }
-                    try {
+                     try {
                         sendMessage("REQUEST_FIRMWARE", FirmataMessageFactory.REQUEST_FIRMWARE);
                      } catch (IOException e) {
                          e.printStackTrace();
                          continue;
                      }
-
+                     sendConnectedToListeners();
                 }
 
                 

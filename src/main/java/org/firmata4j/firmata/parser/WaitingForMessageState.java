@@ -30,6 +30,7 @@ import static org.firmata4j.firmata.parser.FirmataToken.ERROR_DESCRIPTION;
 import static org.firmata4j.firmata.parser.FirmataToken.ERROR_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MESSAGE_EVENT_TYPE;
 import static org.firmata4j.firmata.parser.FirmataToken.HEARTBEAT;
+import static org.firmata4j.firmata.parser.FirmataToken.HEARTBEAT_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.REPORT_VERSION;
 import static org.firmata4j.firmata.parser.FirmataToken.START_SYSEX;
 import static org.firmata4j.firmata.parser.FirmataToken.SYSTEM_RESET;
@@ -77,7 +78,7 @@ public class WaitingForMessageState extends AbstractState {
                 publish(new Event(SYSTEM_RESET_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE));
                 break;
             case HEARTBEAT:
-                System.err.println("HEARTBEAT");
+                publish(new Event(HEARTBEAT_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE));
                 break;
             default:
                 //skip non control token

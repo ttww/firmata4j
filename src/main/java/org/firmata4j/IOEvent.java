@@ -24,6 +24,10 @@
 
 package org.firmata4j;
 
+import java.util.Map;
+
+import org.firmata4j.firmata.FirmataDevice;
+
 /**
  * An event which indicates that the state of an {@link IODevice} changed.
  *
@@ -35,6 +39,7 @@ public class IOEvent {
     private final Pin pin;
     private final long value;
     private final long timestamp;
+    private final Map<String, Object> map;
 
     /**
      * Constructs the event is relevant to {@link IODevice} as a whole.
@@ -58,6 +63,7 @@ public class IOEvent {
         this.pin = null;
         this.value = 0;
         this.timestamp = timestamp;
+        this.map = null;
     }
 
     /**
@@ -82,6 +88,15 @@ public class IOEvent {
         this.pin = pin;
         this.value = pin.getValue();
         this.timestamp = timestamp;
+        this.map = null;
+    }
+
+    public IOEvent(FirmataDevice device, Map<String, Object> map, long timestamp) {
+        this.device = device ;
+        this.pin = null;
+        this.value = 0;
+        this.timestamp = timestamp;
+        this.map = map;
     }
 
     /**
@@ -124,12 +139,43 @@ public class IOEvent {
         return timestamp;
     }
 
+    /**
+     * Returns the map with key/values of none pin events.
+     *
+     * @return map with key/values
+     */
+    public Map<String, Object> getBody() {
+        return map;
+    }
+
+    public Object getBodyItem(String key) {
+        if (map == null) return null;
+        return map.get(key);
+    }
+    
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
-        return "IOEvent [timestamp=" + timestamp + ", pin=" + pin + ", value=" + value + "]";
+        if (pin == null) {
+            if (map == null) return "IOEvent [timestamp=" + timestamp + "]";
+            StringBuilder sb = new StringBuilder();
+            sb.append("IOEvent [");
+            sb.append("timestamp=");
+            sb.append(timestamp);
+            for (String key : map.keySet()) {
+                sb.append(", ");
+                sb.append(key);
+                sb.append("=");
+                sb.append(map.get(key));
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        else
+            return "IOEvent [timestamp=" + timestamp + ", pin=" + pin + ", value=" + value + "]";
     }
-    
+
+     
 }

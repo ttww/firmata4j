@@ -106,8 +106,8 @@ public interface FirmataToken {
     public static final byte COUNTER_QUERY           = 0x64; // ask for counter value(s)
     public static final byte COUNTER_RESPONSE        = 0x65; // reply with for counter value(s)
     public static final String COUNTER_MESSAGE = "counterMessage";
-    public static final String COUNTER_ID      = "counterId";
-    public static final String COUNTER_VALUE   = "counterValue";
+//    public static final String COUNTER_ID      = "counterId";
+//    public static final String COUNTER_VALUE   = "counterValue";
 
     
     public static final byte SERVO_CONFIG            = 0x70; // set max angle, minPulse, maxPulse, freq
@@ -194,4 +194,6 @@ public interface FirmataToken {
     public static final String ERROR_DESCRIPTION = "description";
     public static final String ERROR_CAUSE = "cause";
     
+    public static final String HEARTBEAT_MESSAGE = "heartbeatMessage";
+
 }
