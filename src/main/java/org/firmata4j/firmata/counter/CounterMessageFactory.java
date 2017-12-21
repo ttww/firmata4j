@@ -1,4 +1,32 @@
+/* 
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2014 Oleg Kurbatov (o.v.kurbatov@gmail.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 
+/**
+ * Implementation of the IRQ counter messages and config factory.
+ *
+ * @author Thomas Welsch &lt;ttww@gmx.de&gt;
+ */
 package org.firmata4j.firmata.counter;
 
 import org.firmata4j.Pin.Mode;
@@ -14,7 +42,6 @@ public class CounterMessageFactory {
     }
 
 
-
     // Config Command (COUNTER_CONFIG):
     // ==================================================================
     // [pin][config][sumTimeHighByte][sumTimeLowByte]
@@ -24,27 +51,19 @@ public class CounterMessageFactory {
     // to allow more pins.
     //
     // [config]:
-    // 0x00 = OFF
-    // 0x01 = CHANGE
-    // 0x02 = RISING
-    // 0x03 = FALLING
-    // 0x11 = CHANGE with PULLUP
-    // 0x12 = RISING with PULLUP
-    // 0x13 = FALLING with PULLUP
+    // 0x00 = CHANGE
+    // 0x01 = RISING
+    // 0x02 = FALLING
+    // 0x03 = CHANGE with PULLUP
+    // 0x04 = RISING with PULLUP
+    // 0x05 = FALLING with PULLUP
     //
     // [sumTimeHighByte][sumTimeLowByte]:
     // Time in ms before report and reset the counter
     //
-    // Query Command (COUNTER_QUERY)
-    // ==================================================================
-    // [counterBits][resetBits]
-    // counterBits: Bit 0 = report counter 0, bit 1 for counter 1....
-    // resetBits: Reset after reporting. Next automatic report after
-    // sumTime ms if bit set.
-    //
     // Reply Message (COUNTER_RESPONSE)
     // ==================================================================
-    // [counterBits][first counter Big-Endian, 4 bytes unsigned integer]([second counter...])]
+    // [pin][first counter Big-Endian, 4 bytes unsigned integer]([pin...])]
     // If more than one counter is reported, we start with the lowest counter.
 
     public static final byte COUNTER_CHANGE         = 0x00;
@@ -86,7 +105,6 @@ public class CounterMessageFactory {
             );
         }
 
-
         return new byte[] {
                 FirmataToken.START_SYSEX,
                 FirmataToken.COUNTER_CONFIG,
@@ -96,7 +114,6 @@ public class CounterMessageFactory {
                 (byte) (collectTime & 0xff),
                 FirmataToken.END_SYSEX,
         };
-        
         
     }
 

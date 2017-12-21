@@ -572,7 +572,6 @@ public class FirmataDevice implements IODevice {
                     onI2cMessageReceive(event);
                     break;
                 case COUNTER_MESSAGE:
-                    System.err.println("Got Counter Message " + event.getBodyItem(PIN_ID) + " / " + event.getBodyItem(PIN_VALUE));
                     onPinStateReceive(event);
                     break;
                 case FiniteStateMachine.FSM_IS_IN_TERMINAL_STATE:
