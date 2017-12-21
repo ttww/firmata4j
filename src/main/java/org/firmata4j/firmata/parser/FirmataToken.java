@@ -105,6 +105,10 @@ public interface FirmataToken {
     public static final byte COUNTER_CONFIG          = 0x63; // config IRQ counter module
     public static final byte COUNTER_QUERY           = 0x64; // ask for counter value(s)
     public static final byte COUNTER_RESPONSE        = 0x65; // reply with for counter value(s)
+    public static final String COUNTER_MESSAGE = "counterMessage";
+    public static final String COUNTER_ID      = "counterId";
+    public static final String COUNTER_VALUE   = "counterValue";
+
     
     public static final byte SERVO_CONFIG            = 0x70; // set max angle, minPulse, maxPulse, freq
     public static final byte STRING_DATA             = 0x71; // a string message with 14-bits per byte
@@ -126,7 +130,9 @@ public interface FirmataToken {
     public static final byte SCHEDULER_DATA          = 0x7B; // send a createtask/deletetask/addtotask/schedule/querytasks/querytask request to the scheduler
     public static final byte SYSEX_NON_REALTIME      = 0x7E; // MIDI Reserved for non-realtime messages
     public static final byte SYSEX_REALTIME          = 0x7F; // MIDI Reserved for realtime messages
+    public static final byte HEARTBEAT               = (byte) 0xFC; // Heartbeat, to detect lost connections
 
+    
     // pin modes
     public static final byte PIN_MODE_INPUT          = 0x00; // defined in wiring.h
     public static final byte PIN_MODE_OUTPUT         = 0x01; // defined in wiring.h

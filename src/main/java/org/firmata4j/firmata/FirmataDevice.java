@@ -26,7 +26,12 @@ package org.firmata4j.firmata;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MAPPING;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MAPPING_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MESSAGE_RESPONSE;
+import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_ID;
+import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_MESSAGE;
+import static org.firmata4j.firmata.parser.FirmataToken.COUNTER_VALUE;
 import static org.firmata4j.firmata.parser.FirmataToken.DIGITAL_MESSAGE_RESPONSE;
+import static org.firmata4j.firmata.parser.FirmataToken.ERROR_DESCRIPTION;
+import static org.firmata4j.firmata.parser.FirmataToken.ERROR_MESSAGE;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MAJOR_VERSION;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MINOR_VERSION;
 import static org.firmata4j.firmata.parser.FirmataToken.FIRMWARE_MESSAGE;
@@ -278,8 +283,10 @@ public class FirmataDevice implements IODevice {
 
     public static String toHex(byte[] msg) {
         StringBuilder sb = new StringBuilder();
+        sb.append("$");
         for (byte b : msg) {
-            if (sb.length() != 0) sb.append(',');
+            if (sb.length() != 1) sb.append(',');
+            if ((b & 0xFF) < 16) sb.append('0');
             sb.append(Integer.toHexString(b & 0xFF));
         }
         return sb.toString();
@@ -557,9 +564,19 @@ public class FirmataDevice implements IODevice {
                 case I2C_MESSAGE:
                     onI2cMessageReceive(event);
                     break;
+                case ERROR_MESSAGE:
+                    System.err.println("Got Error Message " + event.getBodyItem(ERROR_DESCRIPTION));
+                    break;
+                    
+                case COUNTER_MESSAGE:
+                    System.err.println("Got Counter Message " + event.getBodyItem(COUNTER_ID) + " / " + event.getBodyItem(COUNTER_VALUE));
+                    break;
+                    
                 case FiniteStateMachine.FSM_IS_IN_TERMINAL_STATE:
                     // should never happen but who knows
                     throw new IllegalStateException("Parser has reached the terminal state. It may be due receiving of unsupported command.");
+                default:
+                    System.err.println("Unknown Message " + event.getName());
             }
         }
 

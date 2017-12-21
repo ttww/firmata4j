@@ -24,12 +24,21 @@
 
 package org.firmata4j.firmata.parser;
 
-import org.firmata4j.firmata.FirmataDevice;
-import org.firmata4j.fsm.Event;
-import org.firmata4j.fsm.AbstractState;
-import org.firmata4j.fsm.FiniteStateMachine;
+import static org.firmata4j.firmata.parser.FirmataToken.ANALOG_MESSAGE;
+import static org.firmata4j.firmata.parser.FirmataToken.DIGITAL_MESSAGE;
+import static org.firmata4j.firmata.parser.FirmataToken.ERROR_DESCRIPTION;
+import static org.firmata4j.firmata.parser.FirmataToken.ERROR_MESSAGE;
+import static org.firmata4j.firmata.parser.FirmataToken.FIRMATA_MESSAGE_EVENT_TYPE;
+import static org.firmata4j.firmata.parser.FirmataToken.HEARTBEAT;
+import static org.firmata4j.firmata.parser.FirmataToken.REPORT_VERSION;
+import static org.firmata4j.firmata.parser.FirmataToken.START_SYSEX;
+import static org.firmata4j.firmata.parser.FirmataToken.SYSTEM_RESET;
+import static org.firmata4j.firmata.parser.FirmataToken.SYSTEM_RESET_MESSAGE;
 
-import static org.firmata4j.firmata.parser.FirmataToken.*;
+import org.firmata4j.firmata.FirmataDevice;
+import org.firmata4j.fsm.AbstractState;
+import org.firmata4j.fsm.Event;
+import org.firmata4j.fsm.FiniteStateMachine;
 
 /**
  * This is initial default state of {@link FirmataDevice}.<br/>
@@ -67,10 +76,13 @@ public class WaitingForMessageState extends AbstractState {
             case SYSTEM_RESET:
                 publish(new Event(SYSTEM_RESET_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE));
                 break;
+            case HEARTBEAT:
+                System.err.println("HEARTBEAT");
+                break;
             default:
                 //skip non control token
                 Event evt = new Event(ERROR_MESSAGE, FIRMATA_MESSAGE_EVENT_TYPE);
-                evt.setBodyItem(ERROR_DESCRIPTION, String.format("Unknown control token has been receved. Skipping. 0x%2X", b));
+                evt.setBodyItem(ERROR_DESCRIPTION, String.format("Unknown control token has been receved. Skipping. 0x%2X (--> 0x%2X)", b, command));
                 publish(evt);
         }
     }

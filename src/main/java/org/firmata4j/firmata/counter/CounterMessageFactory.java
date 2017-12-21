@@ -10,7 +10,7 @@ public class CounterMessageFactory {
     // Load the parser if this class is used:
     static {
         ParsingSysexMessageState.addSysexMessageParser(
-                FirmataToken.COUNTER_CONFIG, ParsingCounterMessagesState.class);
+                FirmataToken.COUNTER_RESPONSE, ParsingCounterMessagesState.class);
     }
 
 
